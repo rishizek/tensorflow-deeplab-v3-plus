@@ -23,9 +23,9 @@ parser.add_argument('--model_dir', type=str, default='./model',
 parser.add_argument('--clean_model_dir', action='store_true',
                     help='Whether to clean up the model directory if present.')
 
-parser.add_argument('--train_epochs', type=int, default=3,
+parser.add_argument('--train_epochs', type=int, default=17,
                     help='Number of training epochs. '
-                         'For 30K training, 3 epochs are expected.')
+                         'For 30K iteration with batch size 6, train_epoch = 17 (= 30K * 6 / 10,582).')
 
 parser.add_argument('--epochs_per_eval', type=int, default=1,
                     help='The number of training epochs to run between evaluations.')
