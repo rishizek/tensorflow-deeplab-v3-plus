@@ -59,13 +59,14 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, is_training, depth=256
         return net
 
 
-def deeplab_v3_generator(num_classes, output_stride, data_format='channels_last'):
+def deeplab_v3_generator(num_classes, output_stride, pre_trained_model, data_format='channels_last'):
   """Generator for DeepLab v3 models.
 
   Args:
     num_classes: The number of possible classes for image classification.
     output_stride: The ResNet unit's stride. Determines the rates for atrous convolution.
       the rates are (6, 12, 18) when the stride is 16, and doubled when 8.
+    pre_trained_model: The path to the pre-trained model for fine-turning model.
     data_format: The input format ('channels_last', 'channels_first', or None).
       If set to None, the format is dependent on whether a GPU is available.
       Only 'channels_last' is supported currently.
@@ -98,7 +99,7 @@ def deeplab_v3_generator(num_classes, output_stride, data_format='channels_last'
 
     exclude = ['resnet_v2_50/logits', 'global_step']
     variables_to_restore = tf.contrib.slim.get_variables_to_restore(exclude=exclude)
-    tf.train.init_from_checkpoint('ini_checkpoints/resnet_v2_50/resnet_v2_50.ckpt',
+    tf.train.init_from_checkpoint(pre_trained_model,
                                   {v.name.split(':')[0]: v for v in variables_to_restore})
 
     inputs_size = tf.shape(inputs)[1:3]

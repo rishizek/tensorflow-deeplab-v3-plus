@@ -49,13 +49,15 @@ parser.add_argument('--data_dir', type=str, default='./dataset/',
 parser.add_argument('--image_data_dir', type=str, default='JPEGImages',
                     help='The directory containing the image data.')
 
+parser.add_argument('--pre_trained_model', type=str, default='./ini_checkpoints/resnet_v2_50/resnet_v2_50.ckpt',
+                    help='Path to the pre-trained model checkpoint.')
+
 parser.add_argument('--output_stride', type=int, default=16,
                     choices=[8, 16],
                     help='Output stride for DeepLab v3. Currently 8 or 16 is supported.')
 
 parser.add_argument('--debug', action='store_true',
                     help='Whether to use debugger to track down bad values during training.')
-
 
 _R_MEAN = 123.68
 _G_MEAN = 116.78
@@ -194,7 +196,8 @@ def deeplabv3_model_fn(features, labels, mode, params):
       tf.map_fn(lambda x: preprocessing.mean_image_addition(x, [_R_MEAN, _G_MEAN, _B_MEAN]), features),
       tf.uint8)
 
-  network = deeplab_model.deeplab_v3_generator(_NUM_CLASSES, params['output_stride'])
+  network = deeplab_model.deeplab_v3_generator(_NUM_CLASSES, params['output_stride'],
+                                               params['pre_trained_model'])
 
   logits = network(features, mode == tf.estimator.ModeKeys.TRAIN)
 
@@ -323,6 +326,7 @@ def main(unused_argv):
       params={
           'output_stride': FLAGS.output_stride,
           'batch_size': FLAGS.batch_size,
+          'pre_trained_model': FLAGS.pre_trained_model
       })
 
   for _ in range(FLAGS.train_epochs // FLAGS.epochs_per_eval):
