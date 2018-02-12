@@ -108,3 +108,4 @@ dataset/VOCdevkit
 ini_checkpoints
 model
 *.record
+models
