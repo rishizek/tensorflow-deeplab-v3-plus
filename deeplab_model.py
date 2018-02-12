@@ -60,13 +60,15 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, is_training, depth=256
         return net
 
 
-def deeplab_v3_generator(num_classes, output_stride, pre_trained_model_dir, data_format='channels_last'):
+def deeplab_v3_generator(num_classes, output_stride, base_architecture, pre_trained_model_dir,
+                         data_format='channels_last'):
   """Generator for DeepLab v3 models.
 
   Args:
     num_classes: The number of possible classes for image classification.
     output_stride: The ResNet unit's stride. Determines the rates for atrous convolution.
       the rates are (6, 12, 18) when the stride is 16, and doubled when 8.
+    base_architecture: The architecture of base Resnet building block.
     pre_trained_model_dir: The path to the directory that contains pre-trained models.
     data_format: The input format ('channels_last', 'channels_first', or None).
       If set to None, the format is dependent on whether a GPU is available.
@@ -81,6 +83,16 @@ def deeplab_v3_generator(num_classes, output_stride, pre_trained_model_dir, data
     #     'channels_first' if tf.test.is_built_with_cuda() else 'channels_last')
     pass
 
+  if base_architecture not in ['resnet_v2_50', 'resnet_v2_101']:
+    raise ValueError("'base_architrecture' must be either 'resnet_v2_50' or 'resnet_v2_50'.")
+
+  if base_architecture == 'resnet_v2_50':
+    base_model = resnet_v2.resnet_v2_50
+  else:
+    base_model = resnet_v2.resnet_v2_101
+
+  checkpoint_path = os.path.join(pre_trained_model_dir, base_architecture, base_architecture + '.ckpt')
+
   def model(inputs, is_training):
     """Constructs the ResNet model given the inputs."""
     if data_format == 'channels_first':
@@ -92,19 +104,19 @@ def deeplab_v3_generator(num_classes, output_stride, pre_trained_model_dir, data
     tf.logging.info('net shape: {}'.format(inputs.shape))
 
     with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope()):
-      logits, end_points = resnet_v2.resnet_v2_50(inputs,
-                                                  num_classes,
-                                                  is_training=is_training,
-                                                  global_pool=False,
-                                                  output_stride=output_stride)
+      logits, end_points = base_model(inputs,
+                                      num_classes,
+                                      is_training=is_training,
+                                      global_pool=False,
+                                      output_stride=output_stride)
 
-    exclude = ['resnet_v2_50/logits', 'global_step']
+    exclude = [base_architecture + '/logits', 'global_step']
     variables_to_restore = tf.contrib.slim.get_variables_to_restore(exclude=exclude)
-    tf.train.init_from_checkpoint(os.path.join(pre_trained_model_dir, 'resnet_v2_50/resnet_v2_50.ckpt'),
+    tf.train.init_from_checkpoint(checkpoint_path,
                                   {v.name.split(':')[0]: v for v in variables_to_restore})
 
     inputs_size = tf.shape(inputs)[1:3]
-    net = end_points['resnet_v2_50/block4']
+    net = end_points[base_architecture + '/block4']
     net = atrous_spatial_pyramid_pooling(net, output_stride, is_training)
     with tf.variable_scope("upsampling_logits"):
       net = layers_lib.conv2d(net, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='conv_1x1')

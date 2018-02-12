@@ -33,7 +33,7 @@ parser.add_argument('--epochs_per_eval', type=int, default=1,
 parser.add_argument('--save_num_images', type=int, default=6,
                     help='How many images to save.')
 
-parser.add_argument('--batch_size', type=int, default=10,
+parser.add_argument('--batch_size', type=int, default=6,
                     help='Number of examples per batch.')
 
 parser.add_argument('--learning_rate_policy', type=str, default='poly',
@@ -48,6 +48,10 @@ parser.add_argument('--data_dir', type=str, default='./dataset/',
 
 parser.add_argument('--image_data_dir', type=str, default='JPEGImages',
                     help='The directory containing the image data.')
+
+parser.add_argument('--base_architecture', type=str, default='resnet_v2_101',
+                    choices=['resnet_v2_50', 'resnet_v2_101'],
+                    help='The architecture of base Resnet building block.')
 
 parser.add_argument('--pre_trained_model_dir', type=str, default='./ini_checkpoints/',
                     help='Path to the pre-trained model checkpoint.')
@@ -197,6 +201,7 @@ def deeplabv3_model_fn(features, labels, mode, params):
       tf.uint8)
 
   network = deeplab_model.deeplab_v3_generator(_NUM_CLASSES, params['output_stride'],
+                                               params['base_architecture'],
                                                params['pre_trained_model_dir'])
 
   logits = network(features, mode == tf.estimator.ModeKeys.TRAIN)
@@ -326,6 +331,7 @@ def main(unused_argv):
       params={
           'output_stride': FLAGS.output_stride,
           'batch_size': FLAGS.batch_size,
+          'base_architecture': FLAGS.base_architecture,
           'pre_trained_model_dir': FLAGS.pre_trained_model_dir
       })
 
