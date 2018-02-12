@@ -23,10 +23,11 @@ parser.add_argument('--model_dir', type=str, default='./model',
 parser.add_argument('--clean_model_dir', action='store_true',
                     help='Whether to clean up the model directory if present.')
 
-parser.add_argument('--train_epochs', type=int, default=40,
-                    help='Number of training epochs.')
+parser.add_argument('--train_epochs', type=int, default=3,
+                    help='Number of training epochs. '
+                         'For 30K training, 3 epochs are expected.')
 
-parser.add_argument('--epochs_per_eval', type=int, default=2,
+parser.add_argument('--epochs_per_eval', type=int, default=1,
                     help='The number of training epochs to run between evaluations.')
 
 parser.add_argument('--save_num_images', type=int, default=6,
@@ -34,6 +35,13 @@ parser.add_argument('--save_num_images', type=int, default=6,
 
 parser.add_argument('--batch_size', type=int, default=10,
                     help='Number of examples per batch.')
+
+parser.add_argument('--learning_rate_policy', type=str, default='poly',
+                    choices=['poly', 'piecewise'],
+                    help='Learning rate policy to optimize loss.')
+
+parser.add_argument('--max_iter', type=int, default=30001,
+                    help='Number of maximum iteration used for "poly" learning rate policy.')
 
 parser.add_argument('--data_dir', type=str, default='./dataset/',
                     help='Path to the directory containing the PASCAL VOC data tf record.')
@@ -60,6 +68,9 @@ _MIN_SCALE = 0.5
 _MAX_SCALE = 2.0
 _IGNORE_LABEL = 255
 
+_STARTER_LEARNING_RATE = 7e-3
+_END_LEARNING_RATE = 1e-8
+_POWER = 0.9
 _WEIGHT_DECAY = 5e-4
 _MOMENTUM = 0.9
 
@@ -228,17 +239,24 @@ def deeplabv3_model_fn(features, labels, mode, params):
   # loss = tf.losses.get_total_loss()  # obtain the regularization losses as well
 
   if mode == tf.estimator.ModeKeys.TRAIN:
-    # Scale the learning rate linearly with the batch size. When the batch size
-    # is 128, the learning rate should be 0.1.
-    initial_learning_rate = 0.1 * params['batch_size'] / 128
-    batches_per_epoch = _NUM_IMAGES['train'] / params['batch_size']
     global_step = tf.train.get_or_create_global_step()
 
-    # Multiply the learning rate by 0.1 at 100, 150, and 200 epochs.
-    boundaries = [int(batches_per_epoch * epoch) for epoch in [100, 150, 200]]
-    values = [initial_learning_rate * decay for decay in [1, 0.1, 0.01, 0.001]]
-    learning_rate = tf.train.piecewise_constant(
-        tf.cast(global_step, tf.int32), boundaries, values)
+    if FLAGS.learning_rate_policy == 'piecewise':
+      # Scale the learning rate linearly with the batch size. When the batch size
+      # is 128, the learning rate should be 0.1.
+      initial_learning_rate = 0.1 * params['batch_size'] / 128
+      batches_per_epoch = _NUM_IMAGES['train'] / params['batch_size']
+      # Multiply the learning rate by 0.1 at 100, 150, and 200 epochs.
+      boundaries = [int(batches_per_epoch * epoch) for epoch in [100, 150, 200]]
+      values = [initial_learning_rate * decay for decay in [1, 0.1, 0.01, 0.001]]
+      learning_rate = tf.train.piecewise_constant(
+          tf.cast(global_step, tf.int32), boundaries, values)
+    elif FLAGS.learning_rate_policy == 'poly':
+      learning_rate = tf.train.polynomial_decay(
+          _STARTER_LEARNING_RATE, tf.cast(global_step, tf.int32),
+          FLAGS.max_iter, _END_LEARNING_RATE, power=_POWER, cycle=True)
+    else:
+      raise ValueError('Learning rate policy must be "piecewise" or "poly"')
 
     # Create a tensor named learning_rate for logging purposes
     tf.identity(learning_rate, name='learning_rate')
