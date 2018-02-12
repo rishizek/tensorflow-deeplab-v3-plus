@@ -60,7 +60,7 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, is_training, depth=256
         return net
 
 
-def deeplab_v3_generator(num_classes, output_stride, base_architecture, pre_trained_model_dir,
+def deeplab_v3_generator(num_classes, output_stride, base_architecture, pre_trained_model,
                          data_format='channels_last'):
   """Generator for DeepLab v3 models.
 
@@ -69,7 +69,7 @@ def deeplab_v3_generator(num_classes, output_stride, base_architecture, pre_trai
     output_stride: The ResNet unit's stride. Determines the rates for atrous convolution.
       the rates are (6, 12, 18) when the stride is 16, and doubled when 8.
     base_architecture: The architecture of base Resnet building block.
-    pre_trained_model_dir: The path to the directory that contains pre-trained models.
+    pre_trained_model: The path to the directory that contains pre-trained models.
     data_format: The input format ('channels_last', 'channels_first', or None).
       If set to None, the format is dependent on whether a GPU is available.
       Only 'channels_last' is supported currently.
@@ -91,8 +91,6 @@ def deeplab_v3_generator(num_classes, output_stride, base_architecture, pre_trai
   else:
     base_model = resnet_v2.resnet_v2_101
 
-  checkpoint_path = os.path.join(pre_trained_model_dir, base_architecture, base_architecture + '.ckpt')
-
   def model(inputs, is_training):
     """Constructs the ResNet model given the inputs."""
     if data_format == 'channels_first':
@@ -112,7 +110,7 @@ def deeplab_v3_generator(num_classes, output_stride, base_architecture, pre_trai
 
     exclude = [base_architecture + '/logits', 'global_step']
     variables_to_restore = tf.contrib.slim.get_variables_to_restore(exclude=exclude)
-    tf.train.init_from_checkpoint(checkpoint_path,
+    tf.train.init_from_checkpoint(pre_trained_model,
                                   {v.name.split(':')[0]: v for v in variables_to_restore})
 
     inputs_size = tf.shape(inputs)[1:3]

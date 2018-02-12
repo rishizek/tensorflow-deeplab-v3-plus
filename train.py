@@ -53,7 +53,7 @@ parser.add_argument('--base_architecture', type=str, default='resnet_v2_101',
                     choices=['resnet_v2_50', 'resnet_v2_101'],
                     help='The architecture of base Resnet building block.')
 
-parser.add_argument('--pre_trained_model_dir', type=str, default='./ini_checkpoints/',
+parser.add_argument('--pre_trained_model', type=str, default='./ini_checkpoints/resnet_v2_101/resnet_v2_101.ckpt',
                     help='Path to the pre-trained model checkpoint.')
 
 parser.add_argument('--output_stride', type=int, default=16,
@@ -202,7 +202,7 @@ def deeplabv3_model_fn(features, labels, mode, params):
 
   network = deeplab_model.deeplab_v3_generator(_NUM_CLASSES, params['output_stride'],
                                                params['base_architecture'],
-                                               params['pre_trained_model_dir'])
+                                               params['pre_trained_model'])
 
   logits = network(features, mode == tf.estimator.ModeKeys.TRAIN)
 
@@ -332,7 +332,7 @@ def main(unused_argv):
           'output_stride': FLAGS.output_stride,
           'batch_size': FLAGS.batch_size,
           'base_architecture': FLAGS.base_architecture,
-          'pre_trained_model_dir': FLAGS.pre_trained_model_dir
+          'pre_trained_model': FLAGS.pre_trained_model
       })
 
   for _ in range(FLAGS.train_epochs // FLAGS.epochs_per_eval):
