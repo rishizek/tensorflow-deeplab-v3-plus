@@ -49,7 +49,7 @@ parser.add_argument('--data_dir', type=str, default='./dataset/',
 parser.add_argument('--image_data_dir', type=str, default='JPEGImages',
                     help='The directory containing the image data.')
 
-parser.add_argument('--pre_trained_model', type=str, default='./ini_checkpoints/resnet_v2_50/resnet_v2_50.ckpt',
+parser.add_argument('--pre_trained_model_dir', type=str, default='./ini_checkpoints/',
                     help='Path to the pre-trained model checkpoint.')
 
 parser.add_argument('--output_stride', type=int, default=16,
@@ -197,7 +197,7 @@ def deeplabv3_model_fn(features, labels, mode, params):
       tf.uint8)
 
   network = deeplab_model.deeplab_v3_generator(_NUM_CLASSES, params['output_stride'],
-                                               params['pre_trained_model'])
+                                               params['pre_trained_model_dir'])
 
   logits = network(features, mode == tf.estimator.ModeKeys.TRAIN)
 
@@ -326,7 +326,7 @@ def main(unused_argv):
       params={
           'output_stride': FLAGS.output_stride,
           'batch_size': FLAGS.batch_size,
-          'pre_trained_model': FLAGS.pre_trained_model
+          'pre_trained_model_dir': FLAGS.pre_trained_model_dir
       })
 
   for _ in range(FLAGS.train_epochs // FLAGS.epochs_per_eval):
