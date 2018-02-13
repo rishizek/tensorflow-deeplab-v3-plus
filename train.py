@@ -268,7 +268,7 @@ def deeplabv3_model_fn(features, labels, mode, params):
     elif FLAGS.learning_rate_policy == 'poly':
       learning_rate = tf.train.polynomial_decay(
           _STARTER_LEARNING_RATE, tf.cast(global_step, tf.int32),
-          FLAGS.max_iter, _END_LEARNING_RATE, power=_POWER, cycle=True)
+          FLAGS.max_iter, _END_LEARNING_RATE, power=_POWER)
     else:
       raise ValueError('Learning rate policy must be "piecewise" or "poly"')
 
