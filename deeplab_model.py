@@ -14,13 +14,15 @@ from tensorflow.contrib.slim.python.slim.nets import resnet_utils
 
 import os
 
-def atrous_spatial_pyramid_pooling(inputs, output_stride, is_training, depth=256):
+def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_training, depth=256):
   """Atrous Spatial Pyramid Pooling.
 
   Args:
     inputs: A tensor of size [batch, height, width, channels].
     output_stride: The ResNet unit's stride. Determines the rates for atrous convolution.
       the rates are (6, 12, 18) when the stride is 16, and doubled when 8.
+    batch_norm_decay: The moving average decay when estimating layer activation
+      statistics in batch normalization.
     is_training: A boolean denoting whether the input is for training.
     depth: The depth of the ResNet unit output.
 
@@ -35,7 +37,7 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, is_training, depth=256
     if output_stride == 8:
       atrous_rates = [2*rate for rate in atrous_rates]
 
-    with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope()):
+    with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope(batch_norm_decay=batch_norm_decay)):
       with arg_scope([layers.batch_norm], is_training=is_training):
         inputs_size = tf.shape(inputs)[1:3]
         # (a) one 1×1 convolution and three 3×3 convolutions with rates = (6, 12, 18) when output stride = 16.
@@ -60,7 +62,11 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, is_training, depth=256
         return net
 
 
-def deeplab_v3_generator(num_classes, output_stride, base_architecture, pre_trained_model,
+def deeplab_v3_generator(num_classes,
+                         output_stride,
+                         base_architecture,
+                         pre_trained_model,
+                         batch_norm_decay,
                          data_format='channels_last'):
   """Generator for DeepLab v3 models.
 
@@ -70,6 +76,8 @@ def deeplab_v3_generator(num_classes, output_stride, base_architecture, pre_trai
       the rates are (6, 12, 18) when the stride is 16, and doubled when 8.
     base_architecture: The architecture of base Resnet building block.
     pre_trained_model: The path to the directory that contains pre-trained models.
+    batch_norm_decay: The moving average decay when estimating layer activation
+      statistics in batch normalization.
     data_format: The input format ('channels_last', 'channels_first', or None).
       If set to None, the format is dependent on whether a GPU is available.
       Only 'channels_last' is supported currently.
@@ -101,7 +109,7 @@ def deeplab_v3_generator(num_classes, output_stride, base_architecture, pre_trai
 
     tf.logging.info('net shape: {}'.format(inputs.shape))
 
-    with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope()):
+    with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope(batch_norm_decay=batch_norm_decay)):
       logits, end_points = base_model(inputs,
                                       num_classes,
                                       is_training=is_training,
@@ -115,7 +123,7 @@ def deeplab_v3_generator(num_classes, output_stride, base_architecture, pre_trai
 
     inputs_size = tf.shape(inputs)[1:3]
     net = end_points[base_architecture + '/block4']
-    net = atrous_spatial_pyramid_pooling(net, output_stride, is_training)
+    net = atrous_spatial_pyramid_pooling(net, output_stride, batch_norm_decay, is_training)
     with tf.variable_scope("upsampling_logits"):
       net = layers_lib.conv2d(net, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='conv_1x1')
       logits = tf.image.resize_bilinear(net, inputs_size, name='upsample')

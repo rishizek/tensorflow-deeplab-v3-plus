@@ -24,8 +24,10 @@ parser.add_argument('--clean_model_dir', action='store_true',
                     help='Whether to clean up the model directory if present.')
 
 parser.add_argument('--train_epochs', type=int, default=20,
-                    help='Number of training epochs. '
-                         'For 30K iteration with batch size 6, train_epoch = 17.01 (= 30K * 6 / 10,582).')
+                    help='Number of training epochs: '
+                         'For 30K iteration with batch size 4, train_epoch = 11.34 (= 30K * 4 / 10,582). '
+                         'For 30K iteration with batch size 6, train_epoch = 17.01 (= 30K * 6 / 10,582). '
+                         'For 30K iteration with batch size 8, train_epoch = 22.68 (= 30K * 8 / 10,582).')
 
 parser.add_argument('--epochs_per_eval', type=int, default=1,
                     help='The number of training epochs to run between evaluations.')
@@ -79,6 +81,8 @@ _END_LEARNING_RATE = 1e-8
 _POWER = 0.9
 _WEIGHT_DECAY = 5e-4
 _MOMENTUM = 0.9
+
+_BATCH_NORM_DECAY = 0.9997
 
 _NUM_IMAGES = {
     'train': 10582,
@@ -200,9 +204,11 @@ def deeplabv3_model_fn(features, labels, mode, params):
       tf.map_fn(lambda x: preprocessing.mean_image_addition(x, [_R_MEAN, _G_MEAN, _B_MEAN]), features),
       tf.uint8)
 
-  network = deeplab_model.deeplab_v3_generator(_NUM_CLASSES, params['output_stride'],
+  network = deeplab_model.deeplab_v3_generator(_NUM_CLASSES,
+                                               params['output_stride'],
                                                params['base_architecture'],
-                                               params['pre_trained_model'])
+                                               params['pre_trained_model'],
+                                               params['batch_norm_decay'])
 
   logits = network(features, mode == tf.estimator.ModeKeys.TRAIN)
 
@@ -332,7 +338,8 @@ def main(unused_argv):
           'output_stride': FLAGS.output_stride,
           'batch_size': FLAGS.batch_size,
           'base_architecture': FLAGS.base_architecture,
-          'pre_trained_model': FLAGS.pre_trained_model
+          'pre_trained_model': FLAGS.pre_trained_model,
+          'batch_norm_decay': _BATCH_NORM_DECAY
       })
 
   for _ in range(FLAGS.train_epochs // FLAGS.epochs_per_eval):
