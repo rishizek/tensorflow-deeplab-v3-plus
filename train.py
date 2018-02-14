@@ -250,12 +250,14 @@ def main(unused_argv):
       train_hooks.append(debug_hook)
       eval_hooks = [debug_hook]
 
+    tf.logging.info("Start training.")
     model.train(
         input_fn=lambda: input_fn(True, FLAGS.data_dir, FLAGS.batch_size, FLAGS.epochs_per_eval),
         hooks=train_hooks,
         # steps=1  # For debug
     )
 
+    tf.logging.info("Start evaluation.")
     # Evaluate the model and print results
     eval_results = model.evaluate(
         # Batch size must be 1 for testing because the images' size differs
