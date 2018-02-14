@@ -157,6 +157,7 @@ def preprocess_image(image, label, is_training):
 
   return image, label
 
+
 def input_fn(is_training, data_dir, batch_size, num_epochs=1):
   """Input_fn using the tf.data input pipeline for CIFAR-10 dataset.
 
