@@ -20,7 +20,7 @@ parser.add_argument('--data_dir', type=str, default='./dataset/VOCdevkit/VOC2012
                     help='Path to the directory containing the PASCAL VOC data.')
 
 parser.add_argument('--output_path', type=str, default='./dataset',
-                    help='Path to the directory to download data and extract the tarball')
+                    help='Path to the directory to create TFRecords outputs.')
 
 parser.add_argument('--train_data_list', type=str, default='./dataset/train.txt',
                     help='Path to the file listing the training data.')
