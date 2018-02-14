@@ -4,6 +4,10 @@ from PIL import Image
 import numpy as np
 import tensorflow as tf
 
+_R_MEAN = 123.68
+_G_MEAN = 116.78
+_B_MEAN = 103.94
+
 # colour map
 label_colours = [(0, 0, 0),  # 0=background
                  # 1=aeroplane, 2=bicycle, 3=bird, 4=boat, 5=bottle
@@ -42,7 +46,7 @@ def decode_labels(mask, num_images=1, num_classes=21):
   return outputs
 
 
-def mean_image_addition(image, means):
+def mean_image_addition(image, means=(_R_MEAN, _G_MEAN, _B_MEAN)):
   """Adds the given means from each image channel.
 
   For example:
@@ -75,7 +79,7 @@ def mean_image_addition(image, means):
   return tf.concat(axis=2, values=channels)
 
 
-def mean_image_subtraction(image, means):
+def mean_image_subtraction(image, means=(_R_MEAN, _G_MEAN, _B_MEAN)):
   """Subtracts the given means from each image channel.
 
   For example:

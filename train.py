@@ -65,9 +65,6 @@ parser.add_argument('--output_stride', type=int, default=16,
 parser.add_argument('--debug', action='store_true',
                     help='Whether to use debugger to track down bad values during training.')
 
-_R_MEAN = 123.68
-_G_MEAN = 116.78
-_B_MEAN = 103.94
 _NUM_CLASSES = 21
 _HEIGHT = 513
 _WIDTH = 513
@@ -156,10 +153,9 @@ def preprocess_image(image, label, is_training):
     image, label = preprocessing.random_flip_left_right_image_and_label(
         image, label)
 
-  image = preprocessing.mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+  image = preprocessing.mean_image_subtraction(image)
 
   return image, label
-
 
 def input_fn(is_training, data_dir, batch_size, num_epochs=1):
   """Input_fn using the tf.data input pipeline for CIFAR-10 dataset.
@@ -217,9 +213,6 @@ def main(unused_argv):
           'base_architecture': FLAGS.base_architecture,
           'pre_trained_model': FLAGS.pre_trained_model,
           'batch_norm_decay': _BATCH_NORM_DECAY,
-          'r_mean': _R_MEAN,
-          'g_mean': _G_MEAN,
-          'b_mean': _B_MEAN,
           'num_classes': _NUM_CLASSES,
           'tensorboard_images_max_outputs': FLAGS.tensorboard_images_max_outputs,
           'weight_decay': _WEIGHT_DECAY,

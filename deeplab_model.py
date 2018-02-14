@@ -138,10 +138,7 @@ def deeplab_v3_generator(num_classes,
 def deeplabv3_model_fn(features, labels, mode, params):
   """Model function for PASCAL VOC."""
   images_summary = tf.cast(
-      tf.map_fn(lambda x: preprocessing.mean_image_addition(
-          x,
-          [params['r_mean'], params['g_mean'], params['b_mean']]),
-          features),
+      tf.map_fn(preprocessing.mean_image_addition, features),
       tf.uint8)
 
   network = deeplab_v3_generator(params['num_classes'],
