@@ -23,11 +23,12 @@ parser.add_argument('--model_dir', type=str, default='./model',
 parser.add_argument('--clean_model_dir', action='store_true',
                     help='Whether to clean up the model directory if present.')
 
-parser.add_argument('--train_epochs', type=int, default=20,
+parser.add_argument('--train_epochs', type=int, default=25,
                     help='Number of training epochs: '
                          'For 30K iteration with batch size 4, train_epoch = 11.34 (= 30K * 4 / 10,582). '
                          'For 30K iteration with batch size 6, train_epoch = 17.01 (= 30K * 6 / 10,582). '
-                         'For 30K iteration with batch size 8, train_epoch = 22.68 (= 30K * 8 / 10,582).')
+                         'For 30K iteration with batch size 8, train_epoch = 22.68 (= 30K * 8 / 10,582). '
+                         'For 30K iteration with batch size 9, train_epoch = 25.52 (= 30K * 9 / 10,582).')
 
 parser.add_argument('--epochs_per_eval', type=int, default=1,
                     help='The number of training epochs to run between evaluations.')
@@ -35,7 +36,7 @@ parser.add_argument('--epochs_per_eval', type=int, default=1,
 parser.add_argument('--tensorboard_images_max_outputs', type=int, default=6,
                     help='Max number of batch elements to generate for Tensorboard.')
 
-parser.add_argument('--batch_size', type=int, default=6,
+parser.add_argument('--batch_size', type=int, default=8,
                     help='Number of examples per batch.')
 
 parser.add_argument('--learning_rate_policy', type=str, default='poly',
