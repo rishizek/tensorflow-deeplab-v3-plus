@@ -117,10 +117,11 @@ def deeplab_v3_generator(num_classes,
                                       global_pool=False,
                                       output_stride=output_stride)
 
-    exclude = [base_architecture + '/logits', 'global_step']
-    variables_to_restore = tf.contrib.slim.get_variables_to_restore(exclude=exclude)
-    tf.train.init_from_checkpoint(pre_trained_model,
-                                  {v.name.split(':')[0]: v for v in variables_to_restore})
+    if is_training:
+      exclude = [base_architecture + '/logits', 'global_step']
+      variables_to_restore = tf.contrib.slim.get_variables_to_restore(exclude=exclude)
+      tf.train.init_from_checkpoint(pre_trained_model,
+                                    {v.name.split(':')[0]: v for v in variables_to_restore})
 
     inputs_size = tf.shape(inputs)[1:3]
     net = end_points[base_architecture + '/block4']
