@@ -12,7 +12,8 @@ from tensorflow.contrib.framework.python.ops import arg_scope
 from tensorflow.contrib.layers.python.layers import layers
 from tensorflow.contrib.slim.python.slim.nets import resnet_utils
 
-import os
+from utils import preprocessing
+
 
 def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_training, depth=256):
   """Atrous Spatial Pyramid Pooling.
@@ -131,3 +132,131 @@ def deeplab_v3_generator(num_classes,
     return logits
 
   return model
+
+
+def deeplabv3_model_fn(features, labels, mode, params):
+  """Model function for PASCAL VOC."""
+  images_summary = tf.cast(
+      tf.map_fn(lambda x: preprocessing.mean_image_addition(
+          x,
+          [params['r_mean'], params['g_mean'], params['b_mean']]),
+          features),
+      tf.uint8)
+
+  network = deeplab_v3_generator(params['num_classes'],
+                                 params['output_stride'],
+                                 params['base_architecture'],
+                                 params['pre_trained_model'],
+                                 params['batch_norm_decay'])
+
+  logits = network(features, mode == tf.estimator.ModeKeys.TRAIN)
+
+  predictions = {
+      'classes': tf.expand_dims(tf.argmax(logits, axis=3, output_type=tf.int32), axis=3),
+      'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
+  }
+
+  labels_summary = tf.py_func(preprocessing.decode_labels,
+                              [labels, params['batch_size'], params['num_classes']], tf.uint8)
+  preds_summary = tf.py_func(preprocessing.decode_labels,
+                             [predictions['classes'], params['batch_size'], params['num_classes']],
+                             tf.uint8)
+
+  tf.summary.image('images',
+                   tf.concat(axis=2, values=[images_summary, labels_summary, preds_summary]),
+                   max_outputs=params['tensorboard_images_max_outputs'])  # Concatenate row-wise.
+
+  if mode == tf.estimator.ModeKeys.PREDICT:
+    return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+
+  labels = tf.squeeze(labels, axis=3)  # reduce the channel dimension.
+
+  logits_by_num_classes = tf.reshape(logits, [-1, params['num_classes']])
+  labels_flat = tf.reshape(labels, [-1, ])
+
+  valid_indices = tf.to_int32(labels_flat <= params['num_classes'] - 1)
+  valid_logits = tf.dynamic_partition(logits_by_num_classes, valid_indices, num_partitions=2)[1]
+  valid_labels = tf.dynamic_partition(labels_flat, valid_indices, num_partitions=2)[1]
+
+  cross_entropy = tf.losses.sparse_softmax_cross_entropy(
+      logits=valid_logits, labels=valid_labels)
+
+  # Create a tensor named cross_entropy for logging purposes.
+  tf.identity(cross_entropy, name='cross_entropy')
+  tf.summary.scalar('cross_entropy', cross_entropy)
+
+  # Add weight decay to the loss.
+  with tf.variable_scope("total_loss"):
+    loss = cross_entropy + params['weight_decay'] * tf.add_n(
+        [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
+  # loss = tf.losses.get_total_loss()  # obtain the regularization losses as well
+
+  if mode == tf.estimator.ModeKeys.TRAIN:
+    global_step = tf.train.get_or_create_global_step()
+
+    if params['learning_rate_policy'] == 'piecewise':
+      # Scale the learning rate linearly with the batch size. When the batch size
+      # is 128, the learning rate should be 0.1.
+      initial_learning_rate = 0.1 * params['batch_size'] / 128
+      batches_per_epoch = params['num_train'] / params['batch_size']
+      # Multiply the learning rate by 0.1 at 100, 150, and 200 epochs.
+      boundaries = [int(batches_per_epoch * epoch) for epoch in [100, 150, 200]]
+      values = [initial_learning_rate * decay for decay in [1, 0.1, 0.01, 0.001]]
+      learning_rate = tf.train.piecewise_constant(
+          tf.cast(global_step, tf.int32), boundaries, values)
+    elif params['learning_rate_policy'] == 'poly':
+      learning_rate = tf.train.polynomial_decay(
+          params['initial_learning_rate'], tf.cast(global_step, tf.int32),
+          params['max_iter'], params['end_learning_rate'], power=params['power'])
+    else:
+      raise ValueError('Learning rate policy must be "piecewise" or "poly"')
+
+    # Create a tensor named learning_rate for logging purposes
+    tf.identity(learning_rate, name='learning_rate')
+    tf.summary.scalar('learning_rate', learning_rate)
+
+    optimizer = tf.train.MomentumOptimizer(
+        learning_rate=learning_rate,
+        momentum=params['momentum'])
+
+    # Batch norm requires update ops to be added as a dependency to the train_op
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+      train_op = optimizer.minimize(loss, global_step)
+  else:
+    train_op = None
+
+  preds_flat = tf.reshape(predictions['classes'], [-1, ])
+  valid_preds = tf.dynamic_partition(preds_flat, valid_indices, num_partitions=2)[1]
+  accuracy = tf.metrics.accuracy(
+      valid_labels, valid_preds)
+  mean_iou = tf.metrics.mean_iou(valid_labels, valid_preds, params['num_classes'])
+  metrics = {'px_accuracy': accuracy, 'mean_iou': mean_iou}
+
+  # Create a tensor named train_accuracy for logging purposes
+  tf.identity(accuracy[1], name='train_px_accuracy')
+  tf.summary.scalar('train_px_accuracy', accuracy[1])
+
+  def compute_mean_accuracy(total_cm):
+    """Compute the mean per class accuracy via the confusion matrix."""
+    per_row_sum = tf.to_float(tf.reduce_sum(total_cm, 1))
+    cm_diag = tf.to_float(tf.diag_part(total_cm))
+    denominator = per_row_sum
+
+    # If the value of the denominator is 0, set it to 1 to avoid
+    # zero division.
+    denominator = tf.where(
+        tf.greater(denominator, 0), denominator,
+        tf.ones_like(denominator))
+    accuracies = tf.div(cm_diag, denominator)
+    return tf.reduce_mean(accuracies)
+
+  tf.identity(compute_mean_accuracy(mean_iou[1]), name='train_mean_iou')
+  tf.summary.scalar('train_mean_iou', compute_mean_accuracy(mean_iou[1]))
+
+  return tf.estimator.EstimatorSpec(
+      mode=mode,
+      predictions=predictions,
+      loss=loss,
+      train_op=train_op,
+      eval_metric_ops=metrics)
