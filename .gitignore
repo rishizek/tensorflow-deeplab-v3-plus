@@ -109,3 +109,5 @@ ini_checkpoints
 model
 *.record
 models
+dataset/inference_output/
+.DS_Store
