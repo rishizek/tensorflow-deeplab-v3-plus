@@ -137,7 +137,7 @@ def deeplab_v3_generator(num_classes,
 
 def deeplabv3_model_fn(features, labels, mode, params):
   """Model function for PASCAL VOC."""
-  images_summary = tf.cast(
+  images = tf.cast(
       tf.map_fn(preprocessing.mean_image_addition, features),
       tf.uint8)
 
@@ -149,23 +149,27 @@ def deeplabv3_model_fn(features, labels, mode, params):
 
   logits = network(features, mode == tf.estimator.ModeKeys.TRAIN)
 
+  pred_classes = tf.expand_dims(tf.argmax(logits, axis=3, output_type=tf.int32), axis=3)
+
+  pred_decoded_labels = tf.py_func(preprocessing.decode_labels,
+                                   [pred_classes, params['batch_size'], params['num_classes']],
+                                   tf.uint8)
+
   predictions = {
-      'classes': tf.expand_dims(tf.argmax(logits, axis=3, output_type=tf.int32), axis=3),
-      'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
+      'classes': pred_classes,
+      'probabilities': tf.nn.softmax(logits, name='softmax_tensor'),
+      'decoded_labels': pred_decoded_labels
   }
-
-  labels_summary = tf.py_func(preprocessing.decode_labels,
-                              [labels, params['batch_size'], params['num_classes']], tf.uint8)
-  preds_summary = tf.py_func(preprocessing.decode_labels,
-                             [predictions['classes'], params['batch_size'], params['num_classes']],
-                             tf.uint8)
-
-  tf.summary.image('images',
-                   tf.concat(axis=2, values=[images_summary, labels_summary, preds_summary]),
-                   max_outputs=params['tensorboard_images_max_outputs'])  # Concatenate row-wise.
 
   if mode == tf.estimator.ModeKeys.PREDICT:
     return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+
+  gt_decoded_labels = tf.py_func(preprocessing.decode_labels,
+                              [labels, params['batch_size'], params['num_classes']], tf.uint8)
+
+  tf.summary.image('images',
+                   tf.concat(axis=2, values=[images, gt_decoded_labels, pred_decoded_labels]),
+                   max_outputs=params['tensorboard_images_max_outputs'])  # Concatenate row-wise.
 
   labels = tf.squeeze(labels, axis=3)  # reduce the channel dimension.
 
