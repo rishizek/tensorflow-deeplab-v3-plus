@@ -260,6 +260,10 @@ def deeplabv3_model_fn(features, labels, mode, params):
         tf.ones_like(denominator))
     iou = tf.div(cm_diag, denominator)
 
+    for i in range(params['num_classes']):
+      tf.identity(iou[i], name='train_iou_class{}'.format(i))
+      tf.summary.scalar('train_iou_class{}'.format(i), iou[i])
+
     # If the number of valid entries is 0 (no classes) we return 0.
     result = tf.where(
         tf.greater(num_valid_entries, 0),
@@ -267,8 +271,10 @@ def deeplabv3_model_fn(features, labels, mode, params):
         0)
     return result
 
-  tf.identity(compute_mean_iou(mean_iou[1]), name='train_mean_iou')
-  tf.summary.scalar('train_mean_iou', compute_mean_iou(mean_iou[1]))
+  train_mean_iou = compute_mean_iou(mean_iou[1])
+
+  tf.identity(train_mean_iou, name='train_mean_iou')
+  tf.summary.scalar('train_mean_iou', train_mean_iou)
 
   return tf.estimator.EstimatorSpec(
       mode=mode,
