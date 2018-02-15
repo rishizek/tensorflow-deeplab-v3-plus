@@ -165,7 +165,7 @@ def deeplabv3_model_fn(features, labels, mode, params):
     return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
   gt_decoded_labels = tf.py_func(preprocessing.decode_labels,
-                              [labels, params['batch_size'], params['num_classes']], tf.uint8)
+                                 [labels, params['batch_size'], params['num_classes']], tf.uint8)
 
   tf.summary.image('images',
                    tf.concat(axis=2, values=[images, gt_decoded_labels, pred_decoded_labels]),
@@ -239,22 +239,36 @@ def deeplabv3_model_fn(features, labels, mode, params):
   tf.identity(accuracy[1], name='train_px_accuracy')
   tf.summary.scalar('train_px_accuracy', accuracy[1])
 
-  def compute_mean_accuracy(total_cm):
-    """Compute the mean per class accuracy via the confusion matrix."""
-    per_row_sum = tf.to_float(tf.reduce_sum(total_cm, 1))
+  def compute_mean_iou(total_cm, name='mean_iou'):
+    """Compute the mean intersection-over-union via the confusion matrix."""
+    sum_over_row = tf.to_float(tf.reduce_sum(total_cm, 0))
+    sum_over_col = tf.to_float(tf.reduce_sum(total_cm, 1))
     cm_diag = tf.to_float(tf.diag_part(total_cm))
-    denominator = per_row_sum
+    denominator = sum_over_row + sum_over_col - cm_diag
+
+    # The mean is only computed over classes that appear in the
+    # label or prediction tensor. If the denominator is 0, we need to
+    # ignore the class.
+    num_valid_entries = tf.reduce_sum(tf.cast(
+        tf.not_equal(denominator, 0), dtype=tf.float32))
 
     # If the value of the denominator is 0, set it to 1 to avoid
     # zero division.
     denominator = tf.where(
-        tf.greater(denominator, 0), denominator,
+        tf.greater(denominator, 0),
+        denominator,
         tf.ones_like(denominator))
-    accuracies = tf.div(cm_diag, denominator)
-    return tf.reduce_mean(accuracies)
+    iou = tf.div(cm_diag, denominator)
 
-  tf.identity(compute_mean_accuracy(mean_iou[1]), name='train_mean_iou')
-  tf.summary.scalar('train_mean_iou', compute_mean_accuracy(mean_iou[1]))
+    # If the number of valid entries is 0 (no classes) we return 0.
+    result = tf.where(
+        tf.greater(num_valid_entries, 0),
+        tf.reduce_sum(iou, name=name) / num_valid_entries,
+        0)
+    return result
+
+  tf.identity(compute_mean_iou(mean_iou[1]), name='train_mean_iou')
+  tf.summary.scalar('train_mean_iou', compute_mean_iou(mean_iou[1]))
 
   return tf.estimator.EstimatorSpec(
       mode=mode,
