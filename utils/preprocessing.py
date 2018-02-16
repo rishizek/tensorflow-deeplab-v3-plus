@@ -210,11 +210,11 @@ def random_flip_left_right_image_and_label(image, label):
   return image, label
 
 
-def eval_input_fn(filenames, batch_size=1):
+def eval_input_fn(image_filenames, batch_size=1):
   """An input function for evaluation.
 
   Args:
-    filenames: The file names to be predicted.
+    image_filenames: The file names to be predicted.
     batch_size: The number of samples per batch. Need to be 1
         for the images of different sizes.
 
@@ -231,7 +231,7 @@ def eval_input_fn(filenames, batch_size=1):
     image = mean_image_subtraction(image)
     return image
 
-  dataset = tf.data.Dataset.from_tensor_slices(filenames)
+  dataset = tf.data.Dataset.from_tensor_slices(image_filenames)
   dataset = dataset.map(_parse_function)
   dataset = dataset.prefetch(batch_size)
   dataset = dataset.batch(batch_size)
