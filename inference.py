@@ -49,37 +49,6 @@ parser.add_argument('--debug', action='store_true',
 _NUM_CLASSES = 21
 
 
-def eval_input_fn(filenames, batch_size=1):
-  """An input function for evaluation.
-
-  Args:
-    filenames: The file names to be predicted.
-    batch_size: The number of samples per batch. Need to be 1
-        for the images of different sizes.
-
-  Returns:
-    A tuple of images and None.
-  """
-  # Reads an image from a file, decodes it into a dense tensor
-  def _parse_function(filename):
-    image_string = tf.read_file(filename)
-    image = tf.image.decode_image(image_string)
-    image = tf.to_float(tf.image.convert_image_dtype(image, dtype=tf.uint8))
-    image.set_shape([None, None, 3])
-
-    image = preprocessing.mean_image_subtraction(image)
-    return image
-
-  dataset = tf.data.Dataset.from_tensor_slices(filenames)
-  dataset = dataset.map(_parse_function)
-  dataset = dataset.prefetch(batch_size)
-  dataset = dataset.batch(batch_size)
-  iterator = dataset.make_one_shot_iterator()
-  images = iterator.get_next()
-
-  return images, None
-
-
 def main(unused_argv):
   # Using the Winograd non-fused algorithms provides a small performance boost.
   os.environ['TF_ENABLE_WINOGRAD_NONFUSED'] = '1'
@@ -102,10 +71,10 @@ def main(unused_argv):
       })
 
   examples = dataset_util.read_examples_list(FLAGS.infer_data_list)
-  examples = [os.path.join(FLAGS.data_dir, filename) for filename in examples]
+  image_files = [os.path.join(FLAGS.data_dir, filename) for filename in examples]
 
   predictions = model.predict(
-        input_fn=lambda: eval_input_fn(examples),
+        input_fn=lambda: preprocessing.eval_input_fn(image_files),
         hooks=pred_hooks)
 
   output_dir = FLAGS.output_dir

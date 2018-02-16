@@ -208,3 +208,34 @@ def random_flip_left_right_image_and_label(image, label):
   label = tf.cond(mirror_cond, lambda: tf.reverse(label, [1]), lambda: label)
 
   return image, label
+
+
+def eval_input_fn(filenames, batch_size=1):
+  """An input function for evaluation.
+
+  Args:
+    filenames: The file names to be predicted.
+    batch_size: The number of samples per batch. Need to be 1
+        for the images of different sizes.
+
+  Returns:
+    A tuple of images and None.
+  """
+  # Reads an image from a file, decodes it into a dense tensor
+  def _parse_function(filename):
+    image_string = tf.read_file(filename)
+    image = tf.image.decode_image(image_string)
+    image = tf.to_float(tf.image.convert_image_dtype(image, dtype=tf.uint8))
+    image.set_shape([None, None, 3])
+
+    image = mean_image_subtraction(image)
+    return image
+
+  dataset = tf.data.Dataset.from_tensor_slices(filenames)
+  dataset = dataset.map(_parse_function)
+  dataset = dataset.prefetch(batch_size)
+  dataset = dataset.batch(batch_size)
+  iterator = dataset.make_one_shot_iterator()
+  images = iterator.get_next()
+
+  return images, None
