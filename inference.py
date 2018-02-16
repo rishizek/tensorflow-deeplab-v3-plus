@@ -47,7 +47,6 @@ parser.add_argument('--debug', action='store_true',
                     help='Whether to use debugger to track down bad values during training.')
 
 _NUM_CLASSES = 21
-_BATCH_NORM_DECAY = 0.9997
 
 
 def eval_input_fn(filenames, batch_size=1):
@@ -98,7 +97,7 @@ def main(unused_argv):
           'batch_size': 1,  # Batch size must be 1 because the images' size may differ
           'base_architecture': FLAGS.base_architecture,
           'pre_trained_model': None,
-          'batch_norm_decay': _BATCH_NORM_DECAY,
+          'batch_norm_decay': None,
           'num_classes': _NUM_CLASSES,
       })
 

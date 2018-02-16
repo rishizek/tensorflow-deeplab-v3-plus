@@ -14,6 +14,8 @@ from tensorflow.contrib.slim.python.slim.nets import resnet_utils
 
 from utils import preprocessing
 
+_BATCH_NORM_DECAY = 0.9997
+
 
 def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_training, depth=256):
   """Atrous Spatial Pyramid Pooling.
@@ -91,6 +93,9 @@ def deeplab_v3_generator(num_classes,
     # data_format = (
     #     'channels_first' if tf.test.is_built_with_cuda() else 'channels_last')
     pass
+
+  if batch_norm_decay is None:
+    batch_norm_decay = _BATCH_NORM_DECAY
 
   if base_architecture not in ['resnet_v2_50', 'resnet_v2_101']:
     raise ValueError("'base_architrecture' must be either 'resnet_v2_50' or 'resnet_v2_50'.")
