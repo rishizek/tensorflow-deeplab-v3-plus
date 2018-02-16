@@ -112,9 +112,9 @@ def main(unused_argv):
   if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-  for pred_dict, image_path in zip(predictions, examples):
-    image_name = image_path.split('/')[-1].split('.')[0]
-    output_filename = image_name + '_mask.png'
+  for pred_dict, image_path in zip(predictions, image_files):
+    image_basename = os.path.splitext(os.path.basename(image_path))[0]
+    output_filename = image_basename + '_mask.png'
     path_to_output = os.path.join(output_dir, output_filename)
 
     print("generating:", path_to_output)
