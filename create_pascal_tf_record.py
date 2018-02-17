@@ -32,7 +32,7 @@ parser.add_argument('--image_data_dir', type=str, default='JPEGImages',
                     help='The directory containing the image data.')
 
 parser.add_argument('--label_data_dir', type=str, default='SegmentationClassAug',
-                    help='The directory containing the label data.')
+                    help='The directory containing the augmented label data.')
 
 
 def dict_to_tf_example(image_path,
@@ -123,6 +123,11 @@ def main(unused_argv):
   tf.logging.info("Reading from VOC dataset")
   image_dir = os.path.join(FLAGS.data_dir, FLAGS.image_data_dir)
   label_dir = os.path.join(FLAGS.data_dir, FLAGS.label_data_dir)
+
+  if not os.path.isdir(label_dir):
+    raise ValueError("Missing Augmentation label directory. "
+                     "You may download the augmented labels from the link (Thanks to DrSleep): "
+                     "https://www.dropbox.com/s/oeu149j8qtbs1x0/SegmentationClassAug.zip")
   train_examples = dataset_util.read_examples_list(FLAGS.train_data_list)
   val_examples = dataset_util.read_examples_list(FLAGS.valid_data_list)
 
