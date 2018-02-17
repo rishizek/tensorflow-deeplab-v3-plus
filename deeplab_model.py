@@ -15,6 +15,7 @@ from tensorflow.contrib.slim.python.slim.nets import resnet_utils
 from utils import preprocessing
 
 _BATCH_NORM_DECAY = 0.9997
+_WEIGHT_DECAY = 5e-4
 
 
 def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_training, depth=256):
@@ -113,7 +114,7 @@ def deeplab_v3_generator(num_classes,
       # https://www.tensorflow.org/performance/performance_guide#data_formats
       inputs = tf.transpose(inputs, [0, 3, 1, 2])
 
-    tf.logging.info('net shape: {}'.format(inputs.shape))
+    # tf.logging.info('net shape: {}'.format(inputs.shape))
 
     with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope(batch_norm_decay=batch_norm_decay)):
       logits, end_points = base_model(inputs,
@@ -172,10 +173,6 @@ def deeplabv3_model_fn(features, labels, mode, params):
   gt_decoded_labels = tf.py_func(preprocessing.decode_labels,
                                  [labels, params['batch_size'], params['num_classes']], tf.uint8)
 
-  tf.summary.image('images',
-                   tf.concat(axis=2, values=[images, gt_decoded_labels, pred_decoded_labels]),
-                   max_outputs=params['tensorboard_images_max_outputs'])  # Concatenate row-wise.
-
   labels = tf.squeeze(labels, axis=3)  # reduce the channel dimension.
 
   logits_by_num_classes = tf.reshape(logits, [-1, params['num_classes']])
@@ -184,6 +181,14 @@ def deeplabv3_model_fn(features, labels, mode, params):
   valid_indices = tf.to_int32(labels_flat <= params['num_classes'] - 1)
   valid_logits = tf.dynamic_partition(logits_by_num_classes, valid_indices, num_partitions=2)[1]
   valid_labels = tf.dynamic_partition(labels_flat, valid_indices, num_partitions=2)[1]
+
+  preds_flat = tf.reshape(pred_classes, [-1, ])
+  valid_preds = tf.dynamic_partition(preds_flat, valid_indices, num_partitions=2)[1]
+  confusion_matrix = tf.confusion_matrix(valid_labels, valid_preds, num_classes=params['num_classes'])
+
+  predictions['valid_preds'] = valid_preds
+  predictions['valid_labels'] = valid_labels
+  predictions['confusion_matrix'] = confusion_matrix
 
   cross_entropy = tf.losses.sparse_softmax_cross_entropy(
       logits=valid_logits, labels=valid_labels)
@@ -194,11 +199,15 @@ def deeplabv3_model_fn(features, labels, mode, params):
 
   # Add weight decay to the loss.
   with tf.variable_scope("total_loss"):
-    loss = cross_entropy + params['weight_decay'] * tf.add_n(
+    loss = cross_entropy + params.get('weight_decay', _WEIGHT_DECAY) * tf.add_n(
         [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
   # loss = tf.losses.get_total_loss()  # obtain the regularization losses as well
 
   if mode == tf.estimator.ModeKeys.TRAIN:
+    tf.summary.image('images',
+                     tf.concat(axis=2, values=[images, gt_decoded_labels, pred_decoded_labels]),
+                     max_outputs=params['tensorboard_images_max_outputs'])  # Concatenate row-wise.
+
     global_step = tf.train.get_or_create_global_step()
 
     if params['learning_rate_policy'] == 'piecewise':
@@ -233,8 +242,6 @@ def deeplabv3_model_fn(features, labels, mode, params):
   else:
     train_op = None
 
-  preds_flat = tf.reshape(predictions['classes'], [-1, ])
-  valid_preds = tf.dynamic_partition(preds_flat, valid_indices, num_partitions=2)[1]
   accuracy = tf.metrics.accuracy(
       valid_labels, valid_preds)
   mean_iou = tf.metrics.mean_iou(valid_labels, valid_preds, params['num_classes'])

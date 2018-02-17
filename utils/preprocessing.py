@@ -210,32 +210,60 @@ def random_flip_left_right_image_and_label(image, label):
   return image, label
 
 
-def eval_input_fn(image_filenames, batch_size=1):
-  """An input function for evaluation.
+def eval_input_fn(image_filenames, label_filenames=None, batch_size=1):
+  """An input function for evaluation and inference.
 
   Args:
-    image_filenames: The file names to be predicted.
+    image_filenames: The file names for the inferred images.
+    label_filenames: The file names for the grand truth labels.
     batch_size: The number of samples per batch. Need to be 1
         for the images of different sizes.
 
   Returns:
-    A tuple of images and None.
+    A tuple of images and labels.
   """
   # Reads an image from a file, decodes it into a dense tensor
-  def _parse_function(filename):
-    image_string = tf.read_file(filename)
+  def _parse_function(filename, is_label):
+    if not is_label:
+      image_filename, label_filename = filename, None
+    else:
+      image_filename, label_filename = filename
+
+    image_string = tf.read_file(image_filename)
     image = tf.image.decode_image(image_string)
     image = tf.to_float(tf.image.convert_image_dtype(image, dtype=tf.uint8))
     image.set_shape([None, None, 3])
 
     image = mean_image_subtraction(image)
-    return image
 
-  dataset = tf.data.Dataset.from_tensor_slices(image_filenames)
-  dataset = dataset.map(_parse_function)
+    if not is_label:
+      return image
+    else:
+      label_string = tf.read_file(label_filename)
+      label = tf.image.decode_image(label_string)
+      label = tf.to_int32(tf.image.convert_image_dtype(label, dtype=tf.uint8))
+      label.set_shape([None, None, 1])
+
+      return image, label
+
+  if label_filenames is None:
+    input_filenames = image_filenames
+  else:
+    input_filenames = (image_filenames, label_filenames)
+
+  dataset = tf.data.Dataset.from_tensor_slices(input_filenames)
+  if label_filenames is None:
+    dataset = dataset.map(lambda x: _parse_function(x, False))
+  else:
+    dataset = dataset.map(lambda x, y: _parse_function((x, y), True))
   dataset = dataset.prefetch(batch_size)
   dataset = dataset.batch(batch_size)
   iterator = dataset.make_one_shot_iterator()
-  images = iterator.get_next()
 
-  return images, None
+  if label_filenames is None:
+    images = iterator.get_next()
+    labels = None
+  else:
+    images, labels = iterator.get_next()
+
+  return images, labels
