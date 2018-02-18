@@ -49,9 +49,6 @@ parser.add_argument('--max_iter', type=int, default=30001,
 parser.add_argument('--data_dir', type=str, default='./dataset/',
                     help='Path to the directory containing the PASCAL VOC data tf record.')
 
-parser.add_argument('--image_data_dir', type=str, default='JPEGImages',
-                    help='The directory containing the image data.')
-
 parser.add_argument('--base_architecture', type=str, default='resnet_v2_101',
                     choices=['resnet_v2_50', 'resnet_v2_101'],
                     help='The architecture of base Resnet building block.')
