@@ -51,10 +51,11 @@ tensorboard --logdir MODEL_DIR
 ```
 
 <p align="center">
-  <img src="images/tensorboard_miou.png" width=297 height=194>
+  <img src="images/tensorboard_miou.png" width=892 height=584>
 </p>
 <p align="center">
-  <img src="images/tensorboard_images.png" width=454 height=162>
+  <img src="images/tensorboard_images.png" width=892 height=318>
+
 </p>
 
 You can see other options with the following command:
