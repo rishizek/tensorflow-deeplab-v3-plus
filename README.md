@@ -72,10 +72,10 @@ python evaluate.py --help
 The current best model build by this implementation achieves `75.14%` mIoU on the Pascal VOC 2012 
 validation dataset. 
 
-|       |Method                                | OS   | mIOU       |
-|: ----:|: -----------------------------------:|: ---:|:----------:|
-| paper | MG(1,2,4)+ASPP(6,12,18)+Image Pooling|16    | 77.21%     | 
-| repo  | MG(1,2,4)+ASPP(6,12,18)+Image Pooling|16    | **75.14%** |
+|       |Method                                | OS  | mIOU       |
+|:-----:|:------------------------------------:|:---:|:----------:|
+| paper | MG(1,2,4)+ASPP(6,12,18)+Image Pooling|16   | 77.21%     | 
+| repo  | MG(1,2,4)+ASPP(6,12,18)+Image Pooling|16   | **75.14%** |
 
 Here, out model trained about 9 hours (with GTX 1080Ti) with following parameters:
 ```bash
