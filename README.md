@@ -45,23 +45,24 @@ Here, `--pre_trained_model` contains the pre-trained Resnet model, whereas
 If `--model_dir` contains the valid checkpoints, the model is trained from the 
 specified checkpoint in `--model_dir`.
 
+You can see other options with the following command:
+```bash
+python train.py --help
+```
+
+<p align="center">
+  <img src="images/tensorboard_miou.png" width=892 height=584>
+</p>
+
 The training process can be visualized with Tensor Board as follow:
 ```bash
 tensorboard --logdir MODEL_DIR
 ```
 
 <p align="center">
-  <img src="images/tensorboard_miou.png" width=892 height=584>
-</p>
-<p align="center">
   <img src="images/tensorboard_images.png" width=892 height=318>
 
 </p>
-
-You can see other options with the following command:
-```bash
-python train.py --help
-```
 
 ## Evaluation
 To evaluate how model perform, one can use the following command:
