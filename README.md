@@ -76,6 +76,7 @@ validation dataset.
 |: ----:|: -----------------------------------:|: ---:|:----------:|
 | paper | MG(1,2,4)+ASPP(6,12,18)+Image Pooling|16    | 77.21%     | 
 | repo  | MG(1,2,4)+ASPP(6,12,18)+Image Pooling|16    | **75.14%** |
+
 Here, out model trained about 9 hours (with GTX 1080Ti) with following parameters:
 ```bash
 python train.py --train_epochs 33 --batch_size 9 --model_dir models/ba=9,wd=5e-4,max_iter=35k --max_iter 35000
