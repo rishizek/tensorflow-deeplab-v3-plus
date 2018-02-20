@@ -23,7 +23,7 @@ parser.add_argument('--image_data_dir', type=str, default='dataset/VOCdevkit/VOC
                     help='The directory containing the image data.')
 
 parser.add_argument('--label_data_dir', type=str, default='dataset/VOCdevkit/VOC2012/SegmentationClassAug',
-                    help='The directory containing the label data.')
+                    help='The directory containing the ground truth label data.')
 
 parser.add_argument('--evaluation_data_list', type=str, default='./dataset/val.txt',
                     help='Path to the file listing the evaluation images.')
