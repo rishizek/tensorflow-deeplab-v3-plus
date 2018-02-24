@@ -60,6 +60,9 @@ parser.add_argument('--output_stride', type=int, default=16,
                     choices=[8, 16],
                     help='Output stride for DeepLab v3. Currently 8 or 16 is supported.')
 
+parser.add_argument('--freeze_batch_norm', action='store_true',
+                    help='Freeze batch normalization parameters during the training.')
+
 parser.add_argument('--debug', action='store_true',
                     help='Whether to use debugger to track down bad values during training.')
 
@@ -225,7 +228,8 @@ def main(unused_argv):
           'max_iter': FLAGS.max_iter,
           'end_learning_rate': _END_LEARNING_RATE,
           'power': _POWER,
-          'momentum': _MOMENTUM
+          'momentum': _MOMENTUM,
+          'freeze_batch_norm': FLAGS.freeze_batch_norm
       })
 
   for _ in range(FLAGS.train_epochs // FLAGS.epochs_per_eval):

@@ -210,6 +210,12 @@ def deeplabv3_model_fn(features, labels, mode, params):
 
     global_step = tf.train.get_or_create_global_step()
 
+    if not params['freeze_batch_norm']:
+      train_var_list = [v for v in tf.trainable_variables()]
+    else:
+      train_var_list = [v for v in tf.trainable_variables()
+                        if 'beta' not in v.name and 'gamma' not in v.name]
+
     if params['learning_rate_policy'] == 'piecewise':
       # Scale the learning rate linearly with the batch size. When the batch size
       # is 128, the learning rate should be 0.1.
@@ -238,7 +244,7 @@ def deeplabv3_model_fn(features, labels, mode, params):
     # Batch norm requires update ops to be added as a dependency to the train_op
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
-      train_op = optimizer.minimize(loss, global_step)
+      train_op = optimizer.minimize(loss, global_step, var_list=train_var_list)
   else:
     train_op = None
 

@@ -93,7 +93,7 @@ One can find the detailed explanation of mask such as meaning of color in
 
 ## TODO:
 Pull requests are welcome.
-- [ ] Freeze batch normalization during training
+- [x] Freeze batch normalization during training
 - [ ] Multi-GPU support
 - [ ] Channels first support (Apparently large performance boost on GPU)
 - [ ] Model pretrained on MS-COCO
