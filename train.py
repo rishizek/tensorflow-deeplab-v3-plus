@@ -25,6 +25,7 @@ parser.add_argument('--clean_model_dir', action='store_true',
 
 parser.add_argument('--train_epochs', type=int, default=25,
                     help='Number of training epochs: '
+                         'For 30K iteration with batch size 2, train_epoch = 5.67 (= 30K * 2 / 10,582). '
                          'For 30K iteration with batch size 4, train_epoch = 11.34 (= 30K * 4 / 10,582). '
                          'For 30K iteration with batch size 6, train_epoch = 17.01 (= 30K * 6 / 10,582). '
                          'For 30K iteration with batch size 8, train_epoch = 22.68 (= 30K * 8 / 10,582). '
@@ -43,7 +44,7 @@ parser.add_argument('--learning_rate_policy', type=str, default='poly',
                     choices=['poly', 'piecewise'],
                     help='Learning rate policy to optimize loss.')
 
-parser.add_argument('--max_iter', type=int, default=30001,
+parser.add_argument('--max_iter', type=int, default=30000,
                     help='Number of maximum iteration used for "poly" learning rate policy.')
 
 parser.add_argument('--data_dir', type=str, default='./dataset/',
@@ -63,6 +64,12 @@ parser.add_argument('--output_stride', type=int, default=16,
 parser.add_argument('--freeze_batch_norm', action='store_true',
                     help='Freeze batch normalization parameters during the training.')
 
+parser.add_argument('--initial_learning_rate', type=float, default=7e-3,
+                    help='Initial learning rate for the optimizer.')
+
+parser.add_argument('--initial_global_step', type=int, default=0,
+                    help='Initial global step for controlling learning rate when fine-tuning model.')
+
 parser.add_argument('--debug', action='store_true',
                     help='Whether to use debugger to track down bad values during training.')
 
@@ -74,7 +81,6 @@ _MIN_SCALE = 0.5
 _MAX_SCALE = 2.0
 _IGNORE_LABEL = 255
 
-_INITIAL_LEARNING_RATE = 7e-3
 _END_LEARNING_RATE = 1e-8
 _POWER = 0.9
 _WEIGHT_DECAY = 5e-4
@@ -224,12 +230,13 @@ def main(unused_argv):
           'weight_decay': _WEIGHT_DECAY,
           'learning_rate_policy': FLAGS.learning_rate_policy,
           'num_train': _NUM_IMAGES['train'],
-          'initial_learning_rate': _INITIAL_LEARNING_RATE,
+          'initial_learning_rate': FLAGS.initial_learning_rate,
           'max_iter': FLAGS.max_iter,
           'end_learning_rate': _END_LEARNING_RATE,
           'power': _POWER,
           'momentum': _MOMENTUM,
-          'freeze_batch_norm': FLAGS.freeze_batch_norm
+          'freeze_batch_norm': FLAGS.freeze_batch_norm,
+          'initial_global_step': FLAGS.initial_global_step
       })
 
   for _ in range(FLAGS.train_epochs // FLAGS.epochs_per_eval):
