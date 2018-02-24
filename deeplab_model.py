@@ -118,7 +118,7 @@ def deeplab_v3_generator(num_classes,
 
     with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope(batch_norm_decay=batch_norm_decay)):
       logits, end_points = base_model(inputs,
-                                      num_classes,
+                                      num_classes=None,
                                       is_training=is_training,
                                       global_pool=False,
                                       output_stride=output_stride)

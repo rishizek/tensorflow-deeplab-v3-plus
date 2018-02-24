@@ -151,6 +151,10 @@ def preprocess_image(image, label, is_training):
     image, label = preprocessing.random_flip_left_right_image_and_label(
         image, label)
 
+    image.set_shape([_HEIGHT, _WIDTH, 3])
+    label.set_shape([_HEIGHT, _WIDTH, 1])
+
+
   image = preprocessing.mean_image_subtraction(image)
 
   return image, label
