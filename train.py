@@ -165,7 +165,6 @@ def preprocess_image(image, label, is_training):
     image.set_shape([_HEIGHT, _WIDTH, 3])
     label.set_shape([_HEIGHT, _WIDTH, 1])
 
-
   image = preprocessing.mean_image_subtraction(image)
 
   return image, label
