@@ -136,7 +136,7 @@ def deeplab_v3_plus_generator(num_classes,
     with tf.variable_scope("decoder"):
       with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope(batch_norm_decay=batch_norm_decay)):
         with tf.variable_scope("low_level_features"):
-          low_level_features = end_points[base_architecture + '/block1']
+          low_level_features = end_points[base_architecture + '/block1/unit_3/bottleneck_v2/conv1']
           low_level_features = layers_lib.conv2d(low_level_features, 48,
                                                  [1, 1], stride=1, scope='conv_1x1')
           low_level_features_size = tf.shape(low_level_features)[1:3]
