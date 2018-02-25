@@ -59,7 +59,7 @@ def main(unused_argv):
     pred_hooks = [debug_hook]
 
   model = tf.estimator.Estimator(
-      model_fn=deeplab_model.deeplabv3_model_fn,
+      model_fn=deeplab_model.deeplabv3_plus_model_fn,
       model_dir=FLAGS.model_dir,
       params={
           'output_stride': FLAGS.output_stride,

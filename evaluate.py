@@ -54,7 +54,7 @@ def main(unused_argv):
 
   features, labels = preprocessing.eval_input_fn(image_files, label_files)
 
-  predictions = deeplab_model.deeplabv3_model_fn(
+  predictions = deeplab_model.deeplabv3_plus_model_fn(
       features,
       labels,
       tf.estimator.ModeKeys.EVAL,
