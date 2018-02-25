@@ -66,13 +66,13 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_t
         return net
 
 
-def deeplab_v3_generator(num_classes,
-                         output_stride,
-                         base_architecture,
-                         pre_trained_model,
-                         batch_norm_decay,
-                         data_format='channels_last'):
-  """Generator for DeepLab v3 models.
+def deeplab_v3_plus_generator(num_classes,
+                              output_stride,
+                              base_architecture,
+                              pre_trained_model,
+                              batch_norm_decay,
+                              data_format='channels_last'):
+  """Generator for DeepLab v3 plus models.
 
   Args:
     num_classes: The number of possible classes for image classification.
@@ -115,7 +115,7 @@ def deeplab_v3_generator(num_classes,
       inputs = tf.transpose(inputs, [0, 3, 1, 2])
 
     # tf.logging.info('net shape: {}'.format(inputs.shape))
-
+    # encoder
     with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope(batch_norm_decay=batch_norm_decay)):
       logits, end_points = base_model(inputs,
                                       num_classes=None,
@@ -131,27 +131,41 @@ def deeplab_v3_generator(num_classes,
 
     inputs_size = tf.shape(inputs)[1:3]
     net = end_points[base_architecture + '/block4']
-    net = atrous_spatial_pyramid_pooling(net, output_stride, batch_norm_decay, is_training)
-    with tf.variable_scope("upsampling_logits"):
-      net = layers_lib.conv2d(net, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='conv_1x1')
-      logits = tf.image.resize_bilinear(net, inputs_size, name='upsample')
+    encoder_output = atrous_spatial_pyramid_pooling(net, output_stride, batch_norm_decay, is_training)
+
+    with tf.variable_scope("decoder"):
+      with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope(batch_norm_decay=batch_norm_decay)):
+        with tf.variable_scope("low_level_features"):
+          low_level_features = end_points[base_architecture + '/block1']
+          low_level_features = layers_lib.conv2d(low_level_features, 48,
+                                                 [1, 1], stride=1, scope='conv_1x1')
+          low_level_features_size = tf.shape(low_level_features)[1:3]
+
+        with tf.variable_scope("upsampling_logits"):
+          net = tf.image.resize_bilinear(encoder_output, low_level_features_size, name='upsample_1')
+          net = tf.concat([net, low_level_features], axis=3, name='concat')
+          net = resnet_utils.conv2d_same(net, 256, 3, stride=1, scope='conv_3x3_1')
+          net = resnet_utils.conv2d_same(net, 256, 3, stride=1, scope='conv_3x3_2')
+          net = layers_lib.conv2d(net, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='conv_1x1')
+          net = tf.image.resize_bilinear(net, inputs_size, name='upsample_2')
+          logits = tf.image.resize_bilinear(net, inputs_size, name='logits')
 
     return logits
 
   return model
 
 
-def deeplabv3_model_fn(features, labels, mode, params):
+def deeplabv3_plus_model_fn(features, labels, mode, params):
   """Model function for PASCAL VOC."""
   images = tf.cast(
       tf.map_fn(preprocessing.mean_image_addition, features),
       tf.uint8)
 
-  network = deeplab_v3_generator(params['num_classes'],
-                                 params['output_stride'],
-                                 params['base_architecture'],
-                                 params['pre_trained_model'],
-                                 params['batch_norm_decay'])
+  network = deeplab_v3_plus_generator(params['num_classes'],
+                                      params['output_stride'],
+                                      params['base_architecture'],
+                                      params['pre_trained_model'],
+                                      params['batch_norm_decay'])
 
   logits = network(features, mode == tf.estimator.ModeKeys.TRAIN)
 

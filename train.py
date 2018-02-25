@@ -1,4 +1,4 @@
-"""Train a DeepLab v3 model using tf.estimator API."""
+"""Train a DeepLab v3 plus model using tf.estimator API."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -217,7 +217,7 @@ def main(unused_argv):
   # Set up a RunConfig to only save checkpoints once per training cycle.
   run_config = tf.estimator.RunConfig().replace(save_checkpoints_secs=1e9)
   model = tf.estimator.Estimator(
-      model_fn=deeplab_model.deeplabv3_model_fn,
+      model_fn=deeplab_model.deeplabv3_plus_model_fn,
       model_dir=FLAGS.model_dir,
       config=run_config,
       params={
