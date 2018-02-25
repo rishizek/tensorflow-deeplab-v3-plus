@@ -67,6 +67,9 @@ parser.add_argument('--freeze_batch_norm', action='store_true',
 parser.add_argument('--initial_learning_rate', type=float, default=7e-3,
                     help='Initial learning rate for the optimizer.')
 
+parser.add_argument('--end_learning_rate', type=float, default=1e-8,
+                    help='Initial learning rate for the optimizer.')
+
 parser.add_argument('--initial_global_step', type=int, default=0,
                     help='Initial global step for controlling learning rate when fine-tuning model.')
 
@@ -81,7 +84,6 @@ _MIN_SCALE = 0.5
 _MAX_SCALE = 2.0
 _IGNORE_LABEL = 255
 
-_END_LEARNING_RATE = 1e-8
 _POWER = 0.9
 _WEIGHT_DECAY = 5e-4
 _MOMENTUM = 0.9
@@ -232,7 +234,7 @@ def main(unused_argv):
           'num_train': _NUM_IMAGES['train'],
           'initial_learning_rate': FLAGS.initial_learning_rate,
           'max_iter': FLAGS.max_iter,
-          'end_learning_rate': _END_LEARNING_RATE,
+          'end_learning_rate': FLAGS.end_learning_rate,
           'power': _POWER,
           'momentum': _MOMENTUM,
           'freeze_batch_norm': FLAGS.freeze_batch_norm,
