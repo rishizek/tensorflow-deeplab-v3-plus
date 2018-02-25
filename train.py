@@ -67,7 +67,7 @@ parser.add_argument('--freeze_batch_norm', action='store_true',
 parser.add_argument('--initial_learning_rate', type=float, default=7e-3,
                     help='Initial learning rate for the optimizer.')
 
-parser.add_argument('--end_learning_rate', type=float, default=1e-8,
+parser.add_argument('--end_learning_rate', type=float, default=1e-6,
                     help='Initial learning rate for the optimizer.')
 
 parser.add_argument('--initial_global_step', type=int, default=0,
