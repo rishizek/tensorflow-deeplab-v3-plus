@@ -197,10 +197,16 @@ def deeplabv3_model_fn(features, labels, mode, params):
   tf.identity(cross_entropy, name='cross_entropy')
   tf.summary.scalar('cross_entropy', cross_entropy)
 
+  if not params['freeze_batch_norm']:
+    train_var_list = [v for v in tf.trainable_variables()]
+  else:
+    train_var_list = [v for v in tf.trainable_variables()
+                      if 'beta' not in v.name and 'gamma' not in v.name]
+
   # Add weight decay to the loss.
   with tf.variable_scope("total_loss"):
     loss = cross_entropy + params.get('weight_decay', _WEIGHT_DECAY) * tf.add_n(
-        [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
+        [tf.nn.l2_loss(v) for v in train_var_list])
   # loss = tf.losses.get_total_loss()  # obtain the regularization losses as well
 
   if mode == tf.estimator.ModeKeys.TRAIN:
@@ -209,12 +215,6 @@ def deeplabv3_model_fn(features, labels, mode, params):
                      max_outputs=params['tensorboard_images_max_outputs'])  # Concatenate row-wise.
 
     global_step = tf.train.get_or_create_global_step()
-
-    if not params['freeze_batch_norm']:
-      train_var_list = [v for v in tf.trainable_variables()]
-    else:
-      train_var_list = [v for v in tf.trainable_variables()
-                        if 'beta' not in v.name and 'gamma' not in v.name]
 
     if params['learning_rate_policy'] == 'piecewise':
       # Scale the learning rate linearly with the batch size. When the batch size
