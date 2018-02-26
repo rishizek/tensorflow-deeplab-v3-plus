@@ -147,8 +147,7 @@ def deeplab_v3_plus_generator(num_classes,
           net = resnet_utils.conv2d_same(net, 256, 3, stride=1, scope='conv_3x3_1')
           net = resnet_utils.conv2d_same(net, 256, 3, stride=1, scope='conv_3x3_2')
           net = layers_lib.conv2d(net, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='conv_1x1')
-          net = tf.image.resize_bilinear(net, inputs_size, name='upsample_2')
-          logits = tf.image.resize_bilinear(net, inputs_size, name='logits')
+          logits = tf.image.resize_bilinear(net, inputs_size, name='upsample_2')
 
     return logits
 
