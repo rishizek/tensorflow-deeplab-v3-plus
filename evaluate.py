@@ -65,6 +65,7 @@ def main(unused_argv):
           'pre_trained_model': None,
           'batch_norm_decay': None,
           'num_classes': _NUM_CLASSES,
+          'freeze_batch_norm': True
       }).predictions
 
   # Manually load the latest checkpoint
