@@ -73,6 +73,9 @@ parser.add_argument('--end_learning_rate', type=float, default=1e-6,
 parser.add_argument('--initial_global_step', type=int, default=0,
                     help='Initial global step for controlling learning rate when fine-tuning model.')
 
+parser.add_argument('--weight_decay', type=float, default=5e-4,
+                    help='The weight decay to use for regularizing the model.')
+
 parser.add_argument('--debug', action='store_true',
                     help='Whether to use debugger to track down bad values during training.')
 
@@ -85,7 +88,6 @@ _MAX_SCALE = 2.0
 _IGNORE_LABEL = 255
 
 _POWER = 0.9
-_WEIGHT_DECAY = 5e-4
 _MOMENTUM = 0.9
 
 _BATCH_NORM_DECAY = 0.9997
@@ -228,7 +230,7 @@ def main(unused_argv):
           'batch_norm_decay': _BATCH_NORM_DECAY,
           'num_classes': _NUM_CLASSES,
           'tensorboard_images_max_outputs': FLAGS.tensorboard_images_max_outputs,
-          'weight_decay': _WEIGHT_DECAY,
+          'weight_decay': FLAGS.weight_decay,
           'learning_rate_policy': FLAGS.learning_rate_policy,
           'num_train': _NUM_IMAGES['train'],
           'initial_learning_rate': FLAGS.initial_learning_rate,
