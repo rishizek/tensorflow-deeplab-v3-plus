@@ -10,7 +10,6 @@ from tensorflow.contrib.slim.nets import resnet_v2
 from tensorflow.contrib import layers as layers_lib
 from tensorflow.contrib.framework.python.ops import arg_scope
 from tensorflow.contrib.layers.python.layers import layers
-from tensorflow.contrib.slim.python.slim.nets import resnet_utils
 
 from utils import preprocessing
 
@@ -33,7 +32,7 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_t
   Returns:
     The atrous spatial pyramid pooling output.
   """
-  with tf.variable_scope("assp"):
+  with tf.variable_scope("aspp"):
     if output_stride not in [8, 16]:
       raise ValueError('output_stride must be either 8 or 16.')
 
@@ -42,29 +41,28 @@ def atrous_spatial_pyramid_pooling(inputs, output_stride, batch_norm_decay, is_t
       atrous_rates = [2*rate for rate in atrous_rates]
 
     with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope(batch_norm_decay=batch_norm_decay)):
-      with arg_scope([layers.batch_norm], is_training=is_training, decay=batch_norm_decay):
-        with arg_scope([layers_lib.conv2d], activation_fn=None):
-          inputs_size = tf.shape(inputs)[1:3]
-          # (a) one 1×1 convolution and three 3×3 convolutions with rates = (6, 12, 18) when output stride = 16.
-          # the rates are doubled when output stride = 8.
-          conv_1x1 = layers_lib.conv2d(inputs, depth, [1, 1], stride=1, scope="conv_1x1")
-          conv_3x3_1 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, rate=atrous_rates[0], scope='conv_3x3_1')
-          conv_3x3_2 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, rate=atrous_rates[1], scope='conv_3x3_2')
-          conv_3x3_3 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, rate=atrous_rates[2], scope='conv_3x3_3')
+      with arg_scope([layers.batch_norm], is_training=is_training):
+        inputs_size = tf.shape(inputs)[1:3]
+        # (a) one 1×1 convolution and three 3×3 convolutions with rates = (6, 12, 18) when output stride = 16.
+        # the rates are doubled when output stride = 8.
+        conv_1x1 = layers_lib.conv2d(inputs, depth, [1, 1], stride=1, scope="conv_1x1")
+        conv_3x3_1 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, rate=atrous_rates[0], scope='conv_3x3_1')
+        conv_3x3_2 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, rate=atrous_rates[1], scope='conv_3x3_2')
+        conv_3x3_3 = layers_lib.conv2d(inputs, depth, [3, 3], stride=1, rate=atrous_rates[2], scope='conv_3x3_3')
 
-          # (b) the image-level features
-          with tf.variable_scope("image_level_features"):
-            # global average pooling
-            image_level_features = tf.reduce_mean(inputs, [1, 2], name='global_average_pooling', keepdims=True)
-            # 1×1 convolution with 256 filters( and batch normalization)
-            image_level_features = layers_lib.conv2d(image_level_features, depth, [1, 1], stride=1, scope='conv_1x1')
-            # bilinearly upsample features
-            image_level_features = tf.image.resize_bilinear(image_level_features, inputs_size, name='upsample')
+        # (b) the image-level features
+        with tf.variable_scope("image_level_features"):
+          # global average pooling
+          image_level_features = tf.reduce_mean(inputs, [1, 2], name='global_average_pooling', keepdims=True)
+          # 1×1 convolution with 256 filters( and batch normalization)
+          image_level_features = layers_lib.conv2d(image_level_features, depth, [1, 1], stride=1, scope='conv_1x1')
+          # bilinearly upsample features
+          image_level_features = tf.image.resize_bilinear(image_level_features, inputs_size, name='upsample')
 
-          net = tf.concat([conv_1x1, conv_3x3_1, conv_3x3_2, conv_3x3_3, image_level_features], axis=3, name='concat')
-          net = layers_lib.conv2d(net, depth, [1, 1], stride=1, scope='conv_1x1_concat')
+        net = tf.concat([conv_1x1, conv_3x3_1, conv_3x3_2, conv_3x3_3, image_level_features], axis=3, name='concat')
+        net = layers_lib.conv2d(net, depth, [1, 1], stride=1, scope='conv_1x1_concat')
 
-          return net
+        return net
 
 
 def deeplab_v3_plus_generator(num_classes,
@@ -136,7 +134,7 @@ def deeplab_v3_plus_generator(num_classes,
 
     with tf.variable_scope("decoder"):
       with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope(batch_norm_decay=batch_norm_decay)):
-        with arg_scope([layers.batch_norm], is_training=is_training, decay=batch_norm_decay):
+        with arg_scope([layers.batch_norm], is_training=is_training):
           with arg_scope([layers_lib.conv2d], activation_fn=None):
             with tf.variable_scope("low_level_features"):
               low_level_features = end_points[base_architecture + '/block1/unit_3/bottleneck_v2/conv1']
