@@ -135,20 +135,19 @@ def deeplab_v3_plus_generator(num_classes,
     with tf.variable_scope("decoder"):
       with tf.contrib.slim.arg_scope(resnet_v2.resnet_arg_scope(batch_norm_decay=batch_norm_decay)):
         with arg_scope([layers.batch_norm], is_training=is_training):
-          with arg_scope([layers_lib.conv2d], activation_fn=None):
-            with tf.variable_scope("low_level_features"):
-              low_level_features = end_points[base_architecture + '/block1/unit_3/bottleneck_v2/conv1']
-              low_level_features = layers_lib.conv2d(low_level_features, 48,
-                                                     [1, 1], activation_fn=None, stride=1, scope='conv_1x1')
-              low_level_features_size = tf.shape(low_level_features)[1:3]
+          with tf.variable_scope("low_level_features"):
+            low_level_features = end_points[base_architecture + '/block1/unit_3/bottleneck_v2/conv1']
+            low_level_features = layers_lib.conv2d(low_level_features, 48,
+                                                   [1, 1], stride=1, scope='conv_1x1')
+            low_level_features_size = tf.shape(low_level_features)[1:3]
 
-            with tf.variable_scope("upsampling_logits"):
-              net = tf.image.resize_bilinear(encoder_output, low_level_features_size, name='upsample_1')
-              net = tf.concat([net, low_level_features], axis=3, name='concat')
-              net = layers_lib.conv2d(net, 256, [3, 3], stride=1, scope='conv_3x3_1')
-              net = layers_lib.conv2d(net, 256, [3, 3], stride=1, scope='conv_3x3_2')
-              net = layers_lib.conv2d(net, num_classes, [1, 1], normalizer_fn=None, scope='conv_1x1')
-              logits = tf.image.resize_bilinear(net, inputs_size, name='upsample_2')
+          with tf.variable_scope("upsampling_logits"):
+            net = tf.image.resize_bilinear(encoder_output, low_level_features_size, name='upsample_1')
+            net = tf.concat([net, low_level_features], axis=3, name='concat')
+            net = layers_lib.conv2d(net, 256, [3, 3], stride=1, scope='conv_3x3_1')
+            net = layers_lib.conv2d(net, 256, [3, 3], stride=1, scope='conv_3x3_2')
+            net = layers_lib.conv2d(net, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='conv_1x1')
+            logits = tf.image.resize_bilinear(net, inputs_size, name='upsample_2')
 
     return logits
 
