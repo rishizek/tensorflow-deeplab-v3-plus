@@ -156,6 +156,9 @@ def deeplab_v3_plus_generator(num_classes,
 
 def deeplabv3_plus_model_fn(features, labels, mode, params):
   """Model function for PASCAL VOC."""
+  if isinstance(features, dict):
+    features = features['image']
+
   images = tf.cast(
       tf.map_fn(preprocessing.mean_image_addition, features),
       tf.uint8)
@@ -181,7 +184,12 @@ def deeplabv3_plus_model_fn(features, labels, mode, params):
   }
 
   if mode == tf.estimator.ModeKeys.PREDICT:
-    return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+    return tf.estimator.EstimatorSpec(
+        mode=mode,
+        predictions=predictions,
+        export_outputs={
+            'preds': tf.estimator.export.PredictOutput(predictions)
+        })
 
   gt_decoded_labels = tf.py_func(preprocessing.decode_labels,
                                  [labels, params['batch_size'], params['num_classes']], tf.uint8)
