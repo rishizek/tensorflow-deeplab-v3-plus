@@ -184,11 +184,16 @@ def deeplabv3_plus_model_fn(features, labels, mode, params):
   }
 
   if mode == tf.estimator.ModeKeys.PREDICT:
+    # Delete 'decoded_labels' from predictions because custom functions produce error when used with saved_model
+    predictions_without_decoded_labels = predictions.copy()
+    del predictions_without_decoded_labels['decoded_labels']
+
     return tf.estimator.EstimatorSpec(
         mode=mode,
         predictions=predictions,
         export_outputs={
-            'preds': tf.estimator.export.PredictOutput(predictions)
+            'preds': tf.estimator.export.PredictOutput(
+                predictions_without_decoded_labels)
         })
 
   gt_decoded_labels = tf.py_func(preprocessing.decode_labels,
