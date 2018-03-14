@@ -11,6 +11,7 @@ import sys
 import tensorflow as tf
 
 import deeplab_model
+from utils import preprocessing
 
 
 parser = argparse.ArgumentParser()
@@ -52,11 +53,15 @@ def main(unused_argv):
       })
 
   # Export the model
-  image = tf.placeholder(tf.float32, [None, None, None, 3], name='image_tensor')
-  input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn({
-      'image': image,
-  })
-  model.export_savedmodel(FLAGS.export_dir, input_fn)
+  def serving_input_receiver_fn():
+    image = tf.placeholder(tf.float32, [None, None, None, 3], name='image_tensor')
+    receiver_tensors = {'image': image}
+    features = tf.map_fn(preprocessing.mean_image_subtraction, image)
+    return tf.estimator.export.ServingInputReceiver(
+        features=features,
+        receiver_tensors=receiver_tensors)
+
+  model.export_savedmodel(FLAGS.export_dir, serving_input_receiver_fn)
 
 
 if __name__ == '__main__':

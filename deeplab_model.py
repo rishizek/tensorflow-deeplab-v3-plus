@@ -157,7 +157,7 @@ def deeplab_v3_plus_generator(num_classes,
 def deeplabv3_plus_model_fn(features, labels, mode, params):
   """Model function for PASCAL VOC."""
   if isinstance(features, dict):
-    features = features['image']
+    features = features['feature']
 
   images = tf.cast(
       tf.map_fn(preprocessing.mean_image_addition, features),
