@@ -98,7 +98,7 @@ def deeplab_v3_plus_generator(num_classes,
     batch_norm_decay = _BATCH_NORM_DECAY
 
   if base_architecture not in ['resnet_v2_50', 'resnet_v2_101']:
-    raise ValueError("'base_architrecture' must be either 'resnet_v2_50' or 'resnet_v2_50'.")
+    raise ValueError("'base_architrecture' must be either 'resnet_v2_50' or 'resnet_v2_101'.")
 
   if base_architecture == 'resnet_v2_50':
     base_model = resnet_v2.resnet_v2_50
