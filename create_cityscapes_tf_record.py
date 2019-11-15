@@ -115,7 +115,7 @@ def main(_):
     if not tf.gfile.IsDirectory(FLAGS.output_dir):
         tf.gfile.MakeDirs(FLAGS.output_dir)
     train_output_path = os.path.join(FLAGS.output_dir,
-        'cityscapes_{}.record'.format(FLAGS.split_type))
+        '{}.record'.format(FLAGS.split_type))
 
     if FLAGS.cityscapes_dir:
         search_image_files = os.path.join(FLAGS.cityscapes_dir,
