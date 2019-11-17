@@ -131,8 +131,8 @@ def main(unused_argv):
   train_examples = dataset_util.read_examples_list(FLAGS.train_data_list)
   val_examples = dataset_util.read_examples_list(FLAGS.valid_data_list)
 
-  train_output_path = os.path.join(FLAGS.output_path, 'voc_train.record')
-  val_output_path = os.path.join(FLAGS.output_path, 'voc_val.record')
+  train_output_path = os.path.join(FLAGS.output_path, 'train.record')
+  val_output_path = os.path.join(FLAGS.output_path, 'val.record')
 
   create_tf_record(train_output_path, image_dir, label_dir, train_examples)
   create_tf_record(val_output_path, image_dir, label_dir, val_examples)
