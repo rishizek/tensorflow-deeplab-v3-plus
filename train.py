@@ -110,9 +110,9 @@ def get_filenames(is_training, data_dir):
     A list of file names.
   """
   if is_training:
-    return [os.path.join(data_dir, 'voc_train.record')]
+    return [os.path.join(data_dir, 'train.record')]
   else:
-    return [os.path.join(data_dir, 'voc_val.record')]
+    return [os.path.join(data_dir, 'val.record')]
 
 
 def parse_record(raw_record):
