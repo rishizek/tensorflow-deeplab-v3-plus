@@ -139,7 +139,8 @@ def read_dataset(
       tf.minimum(config.num_readers, tf.size(filenames)), tf.int64)
   # TODO: find the optimal block_length.
   dataset = dataset.interleave(
-      file_read_func, cycle_length=cycle_length, block_length=1)
+      file_read_func, cycle_length=cycle_length, block_length=1,num_parallel_calls=tf.data.experimental.AUTOTUNE
+)
 
   if config.shuffle:
     dataset = dataset.shuffle(config.shuffle_buffer_size,
